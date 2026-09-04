@@ -155,6 +155,7 @@ namespace hacks {
         disable_unlock_speed_limit();
         ClickWarp::reset();
         stop_roe_freecam();
+        thermal::shutdown();
     }
 
     void do_infinite_ammo() {

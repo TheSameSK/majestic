@@ -2317,8 +2317,17 @@ block_row make_button( const char* label, void (*callback)() ) {
             visuals.rows.push_back( make_toggle( "Box", "visual", "draw_box", false ) );
             visuals.rows.push_back( make_toggle( "Skeletons", "visual", "draw_skeleton", false ) );
 
+            menu_block thermal;
+            thermal.id = "thermal";
+            thermal.title = "THERMAL";
+            thermal.icon = eye_line;
+            thermal.rows.push_back( make_toggle( "Enabled", "visual", "thermal_enable", false ) );
+            thermal.rows.push_back( dim_when_off( make_color( "World Tint", "visual", "thermal_r", "thermal_g", "thermal_b", "thermal_a" ), "thermal_enable" ) );
+            thermal.rows.push_back( dim_when_off( make_slider( "Glow Intensity", "visual", "thermal_intensity", 1.f, 0.f, 5.f, "%.1f" ), "thermal_enable" ) );
+
             menu_column col;
             col.blocks.push_back( std::move( visuals ) );
+            col.blocks.push_back( std::move( thermal ) );
             columns.push_back( std::move( col ) );
         } else {
             menu_block unload;

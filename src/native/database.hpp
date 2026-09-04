@@ -10848,6 +10848,30 @@ namespace native {
 		static bool _is_seethrough_active() {
 			return invoker::invoke<bool>(0x44b80abab9d80bd3);
 		}
+		static void seethrough_set_color_near(int red, int green, int blue) {
+			invoker::invoke<void>(0x1086127b3a63505e, red, green, blue);
+		}
+		static void seethrough_set_hilight_intensity(float intensity) {
+			invoker::invoke<void>(0x19e50eb6e33e1d28, intensity);
+		}
+		static void seethrough_set_highlight_noise(float noise) {
+			invoker::invoke<void>(0x1636d7fc127b10d2, noise);
+		}
+		static void seethrough_set_noise_min(float amount) {
+			invoker::invoke<void>(0xff5992e1c9e65d05, amount);
+		}
+		static void seethrough_set_noise_max(float amount) {
+			invoker::invoke<void>(0xfebfbfdfb66039de, amount);
+		}
+		static void seethrough_set_fade_start_distance(float distance) {
+			invoker::invoke<void>(0xa78de25577300ba1, distance);
+		}
+		static void seethrough_set_fade_end_distance(float distance) {
+			invoker::invoke<void>(0x9d75795b9dc6ebbf, distance);
+		}
+		static void seethrough_reset() {
+			invoker::invoke<void>(0x70a64c0234ef522c);
+		}
 		static void _0xd7d0b00177485411(type::any p0, float p1) {
 			invoker::invoke<void>(0xd7d0b00177485411, p0, p1);
 		}
