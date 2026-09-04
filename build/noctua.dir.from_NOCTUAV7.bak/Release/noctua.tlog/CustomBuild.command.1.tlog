@@ -1,0 +1,10 @@
+^C:\USERS\HELPE\DESKTOP\NOCTUAV7 - UNLOAD FIX — КОПИЯ\CMAKELISTS.TXT
+setlocal
+D:\VisualStudio\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-SC:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия" "-BC:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия/build" --check-stamp-file "C:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия/build/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

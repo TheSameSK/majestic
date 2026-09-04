@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\helpe\Desktop\NOCTUAV8 - new design — копия\build\CMakeFiles\25aeb419504bf864446bc01710bb854f\executor_payload_embedded.hpp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\helpe\Desktop\NOCTUAV8 - new design — копия\build\CMakeFiles\b505fd7b79b67b8f9cd72963664b3df7\noctua_embedded_payload.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\helpe\Desktop\NOCTUAV8 - new design — копия\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\helpe\Desktop\NOCTUAV8 - new design — копия\build\CMakeFiles\noctua_embedded_payload" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{978F286C-25CA-3619-9BB2-F9276B55E91A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

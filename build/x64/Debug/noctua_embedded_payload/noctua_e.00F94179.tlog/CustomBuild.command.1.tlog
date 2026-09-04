@@ -1,0 +1,28 @@
+^C:\USERS\HELPE\DESKTOP\NOCTUAV7 - UNLOAD FIX — КОПИЯ\BUILD\CMAKEFILES\1C7D6EC97AC290726D0342EA293B7187\EXECUTOR_PAYLOAD_EMBEDDED.HPP.RULE
+setlocal
+D:\VisualStudio\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-DINPUT=C:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия/src/executor/payload.js" "-DOUTPUT=C:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия/build/generated/executor_payload_embedded.hpp" -DNAMESPACE=executor_payload -P "C:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия/src/executor/embed_payload.cmake"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\HELPE\DESKTOP\NOCTUAV7 - UNLOAD FIX — КОПИЯ\BUILD\CMAKEFILES\2F4DEE08E76534389569F56A98411254\NOCTUA_EMBEDDED_PAYLOAD.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\HELPE\DESKTOP\NOCTUAV7 - UNLOAD FIX — КОПИЯ\CMAKELISTS.TXT
+setlocal
+D:\VisualStudio\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe "-SC:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия" "-BC:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия/build" --check-stamp-file "C:/Users/helpe/Desktop/NOCTUAV7 - unload fix — копия/build/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
