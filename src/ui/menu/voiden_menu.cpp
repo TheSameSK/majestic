@@ -1928,6 +1928,8 @@ block_row make_button( const char* label, void (*callback)() ) {
     static const char* const k_watermark_component_ids[ 4 ] = { "name", "fps", "date", "time" };
     static const char* const k_info_names[ 10 ] = { "Name", "Static", "Fraction", "Admin", "Tester", "Media", "AFK", "Dead", "Level", "Distance" };
     static const char* const k_info_ids[ 10 ] = { "name", "static", "fraction", "admin", "tester", "media", "afk", "dead", "level", "distance" };
+    static const char* const k_keybinds_mode_items[ 2 ] = { "Always Show", "Show Active" };
+    static const char* const k_keybinds_display_items[ 2 ] = { "Always", "Menu Open" };
 
     // ------------------------------------------------------------------
     // compact bind menu on the Enable rows: a small gear icon left of the
@@ -2330,8 +2332,17 @@ block_row make_button( const char* label, void (*callback)() ) {
             visuals.rows.push_back( dim_when_off( make_multi( "Show", "visual", "info_flags",
                 k_info_names, k_info_ids, 10 ), "info_enable" ) );
 
+            menu_block keybinds;
+            keybinds.id = "keybinds";
+            keybinds.title = "KEYBINDS";
+            keybinds.icon = settings_3_line;
+            keybinds.rows.push_back( make_toggle( "Enabled", "visual", "keybinds_enable", true ) );
+            keybinds.rows.push_back( dim_when_off( make_choice( "Mode", "visual", "keybinds_mode", 0, k_keybinds_mode_items, 2 ), "keybinds_enable" ) );
+            keybinds.rows.push_back( dim_when_off( make_choice( "Display", "visual", "keybinds_display", 0, k_keybinds_display_items, 2 ), "keybinds_enable" ) );
+
             menu_column left;
             left.blocks.push_back( std::move( thermal ) );
+            left.blocks.push_back( std::move( keybinds ) );
             menu_column right;
             right.blocks.push_back( std::move( visuals ) );
             columns.push_back( std::move( left ) );

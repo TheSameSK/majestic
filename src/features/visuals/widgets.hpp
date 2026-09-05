@@ -593,6 +593,31 @@ namespace hud {
         watermark_draw_parts(dl, x + 10.f, parts_y, parts);
     }
 
+    // compact copy of the menu's key naming; the keybinds panel lives in this
+    // translation unit and cannot reach the menu-local helper
+    inline const char* hud_key_display_name(int vk, char* buf, size_t buf_size) {
+        if (vk <= 0) { strcpy_s(buf, buf_size, "none"); return buf; }
+        if (vk >= VK_LBUTTON && vk <= VK_XBUTTON2) { sprintf_s(buf, buf_size, "mouse %d", vk - VK_LBUTTON + 1); return buf; }
+        if (vk >= '0' && vk <= '9') { buf[0] = (char)vk; buf[1] = 0; return buf; }
+        if (vk >= 'A' && vk <= 'Z') { buf[0] = (char)vk; buf[1] = 0; return buf; }
+        if (vk >= VK_F1 && vk <= VK_F12) { sprintf_s(buf, buf_size, "f%d", vk - VK_F1 + 1); return buf; }
+        switch (vk) {
+            case VK_SPACE:   strcpy_s(buf, buf_size, "space"); return buf;
+            case VK_CONTROL: strcpy_s(buf, buf_size, "ctrl");  return buf;
+            case VK_MENU:    strcpy_s(buf, buf_size, "alt");   return buf;
+            case VK_SHIFT:   strcpy_s(buf, buf_size, "shift"); return buf;
+            case VK_TAB:     strcpy_s(buf, buf_size, "tab");   return buf;
+            case VK_CAPITAL: strcpy_s(buf, buf_size, "caps");  return buf;
+            case VK_INSERT:  strcpy_s(buf, buf_size, "ins");   return buf;
+            case VK_DELETE:  strcpy_s(buf, buf_size, "del");   return buf;
+            case VK_HOME:    strcpy_s(buf, buf_size, "home");  return buf;
+            case VK_END:     strcpy_s(buf, buf_size, "end");   return buf;
+            case VK_PRIOR:   strcpy_s(buf, buf_size, "pgup");  return buf;
+            case VK_NEXT:    strcpy_s(buf, buf_size, "pgdn");  return buf;
+            default: sprintf_s(buf, buf_size, "key 0x%02X", vk); return buf;
+        }
+    }
+
     struct bind_def {
         const char* name;
         const char* cfg_cat;
@@ -626,7 +651,9 @@ namespace hud {
         const bind_def* bind = nullptr;
         float alpha = 0.f;
         float offset = 0.f;
-        const char* mode = "";
+        bool has_key = false;
+        bool row_visible = false;
+        char key_text[32] = {};
         bool active = false;
     };
     struct solus_keybind_state {
@@ -641,12 +668,6 @@ namespace hud {
     static solus_keybind_state keybind_state;
     static int keybind_cache_frame = -1;
 
-    static const char* get_keybind_mode_text(const bind_state::bind_config& bind) {
-        const int mode = bind_state::read_mode(bind);
-        if (mode == 1) return "holding";
-        if (mode == 2) return "always on";
-        return "toggled";
-    }
     static ImVec2 get_default_keybind_pos() {
         return ImVec2(Game.screen.x / 1.385f, Game.screen.y / 2.5f);
     }
@@ -656,28 +677,28 @@ namespace hud {
         if (keybind_cache_frame == frame) return;
         keybind_cache_frame = frame;
 
+        // 0: always list every bound function; 1: only the active ones
+        const int show_mode = config::get("visual", "keybinds_mode", 0);
+
         for (size_t i = 0; i < sizeof(binds) / sizeof(binds[0]); ++i) {
             const bind_def& b = binds[i];
             solus_keybind_entry& entry = keybind_state.entries[i];
             entry.bind = &b;
 
             const bind_state::bind_config bind = make_bind_config(b.cfg_cat, b.cfg_enable, b.cfg_key, b.cfg_mode);
-            if (b.enabled_indicator) {
-                const bool unsafe_required = b.cfg_cat && !strcmp(b.cfg_cat, "hacks");
-                entry.active = config::get(b.cfg_cat, b.cfg_enable, 0) != 0 &&
-                    (!unsafe_required || config::get("misc", "unsafe_mode", 0) != 0);
+            entry.has_key = b.cfg_key && bind_state::read_key(bind) > 0;
+            entry.key_text[0] = 0;
+            if (entry.has_key) {
+                hud_key_display_name(bind_state::read_key(bind), entry.key_text, sizeof(entry.key_text));
             }
-            else {
-                const bool fast_stop_unsafe_blocked =
-                    b.cfg_enable &&
-                    !strcmp(b.cfg_enable, "veh_fast_stop_enabled") &&
-                    config::get("misc", "unsafe_mode", 0) == 0;
 
-                entry.active = !fast_stop_unsafe_blocked && bind_state::is_active(bind);
-            }
-            if (entry.active) {
-                entry.mode = b.enabled_indicator ? "enabled" : get_keybind_mode_text(bind);
-            }
+            const bool fast_stop_unsafe_blocked =
+                b.cfg_enable &&
+                !strcmp(b.cfg_enable, "veh_fast_stop_enabled") &&
+                config::get("misc", "unsafe_mode", 0) == 0;
+
+            entry.active = !fast_stop_unsafe_blocked && bind_state::is_active(bind);
+            entry.row_visible = entry.has_key && (show_mode == 0 || entry.active);
         }
     }
 
@@ -738,17 +759,22 @@ namespace hud {
 
     static void prepare_keybinds() {
         keybind_state.visible = false;
-        if (!config::get("hud", "keybinds", 1)) {
+        if (!config::get("visual", "keybinds_enable", 1)) {
+            hud_widget_cancel_drag(keybind_widget);
+            return;
+        }
+        // 0: always on screen like the watermark, even with no binds;
+        // 1: only while the menu is open
+        if (config::get("visual", "keybinds_display", 0) == 1 && !Game.menuOpen) {
             hud_widget_cancel_drag(keybind_widget);
             return;
         }
 
-        ImFont* font = renderer.calibriFont;
+        ImFont* font = get_hud_font();
         if (!font) return;
         constexpr float font_size = 12.f;
 
         const float frames = 8.f * ImGui::GetIO().DeltaTime;
-        bool latest_item = false;
         float maximum_offset = 66.f;
         int active_count = 0;
 
@@ -758,8 +784,7 @@ namespace hud {
             const bind_def& b = binds[i];
             solus_keybind_entry& entry = keybind_state.entries[i];
 
-            if (entry.active) {
-                latest_item = true;
+            if (entry.row_visible) {
                 entry.alpha += frames;
                 if (entry.alpha > 1.f) entry.alpha = 1.f;
             }
@@ -782,65 +807,56 @@ namespace hud {
         const float width = roundf(keybind_state.width);
 
         keybind_state.visible_rows = active_count;
-        keybind_state.height = active_count > 0 ? 27.f + 15.f * active_count : 24.f;
+        keybind_state.height = 24.f + 15.f * active_count;
+        keybind_state.alpha = 1.f;
         hud_widget_update_drag(keybind_widget, "keybinds_x", "keybinds_y", get_default_keybind_pos(), ImVec2(width, keybind_state.height));
         hud_widget_update_anim(keybind_widget);
 
-        if ((active_count > 0 && latest_item) || Game.menuOpen) {
-            keybind_state.alpha += frames;
-            if (keybind_state.alpha > 1.f) keybind_state.alpha = 1.f;
-        }
-        else {
-            keybind_state.alpha -= frames;
-            if (keybind_state.alpha < 0.f) keybind_state.alpha = 0.f;
-        }
-
-        keybind_state.visible = keybind_state.alpha > 0.f;
+        keybind_state.visible = true;
     }
 
     static void draw_keybinds() {
         if (!keybind_state.visible) return;
 
-        ImFont* font = renderer.calibriFont;
+        ImFont* font = get_hud_font();
         if (!font) return;
         constexpr float font_size = 12.f;
 
         auto* dl = ImGui::GetBackgroundDrawList();
         if (!dl) return;
 
-        const float alpha = hud_widget_draw_alpha(keybind_widget, keybind_state.alpha);
+        const float alpha = hud_widget_draw_alpha(keybind_widget, 1.f);
         const float width = roundf(keybind_state.width);
         const float x = keybind_widget.pos.x;
         const float y = keybind_widget.pos.y;
-        draw_solus_container(dl, x, y + 2.f, width, 19.f, alpha);
+        const float panel_h = keybind_state.height;
 
-        const char* title = "keybinds";
+        // voiden-style container, same language as the watermark: dark
+        // rounded panel + thin border, rows expand the height downward
+        dl->AddRectFilled(ImVec2(x, y), ImVec2(x + width, y + panel_h), IM_COL32(9, 9, 10, (int)(240.f * alpha)), 6.f);
+        dl->AddRect(ImVec2(x, y), ImVec2(x + width, y + panel_h), IM_COL32(32, 32, 34, (int)(255.f * alpha)), 6.f);
+
+        const char* title = "KEYBINDS";
         const ImVec2 title_size = font->CalcTextSizeA(font_size, FLT_MAX, 0.f, title);
-        dl->AddText(font, font_size, ImVec2(x - title_size.x * 0.5f + width * 0.5f, y + 9.f), IM_COL32(255, 255, 255, (int)(alpha * 255.f)), title);
+        dl->AddText(font, font_size, ImVec2(x - title_size.x * 0.5f + width * 0.5f, y + 6.f), IM_COL32(255, 255, 255, (int)(alpha * 255.f)), title);
 
-        float height_offset = 27.f;
-        auto draw_row = [&](const char* name, const char* mode, float row_alpha) {
-            const char* key_type = mode ? mode : "?";
-            const ImVec2 key_size = font->CalcTextSizeA(font_size, FLT_MAX, 0.f, key_type);
-            const int row_text_alpha = (int)(alpha * row_alpha * 255.f);
-            const int state_alpha = (int)(row_text_alpha * 0.5f);
-            const ImVec2 name_pos(x + 5.f, y + height_offset);
-            const ImVec2 state_pos(x + width - key_size.x - 5.f, y + height_offset);
-            const ImU32 outline_col = IM_COL32(0, 0, 0, (int)(row_text_alpha * 0.65f));
-            const ImU32 state_outline_col = IM_COL32(0, 0, 0, (int)(state_alpha * 0.65f));
-
-            dl->AddText(font, font_size, ImVec2(name_pos.x + 1.f, name_pos.y + 1.f), outline_col, name);
-            dl->AddText(font, font_size, name_pos, IM_COL32(255, 255, 255, row_text_alpha), name);
-            dl->AddText(font, font_size, ImVec2(state_pos.x + 1.f, state_pos.y + 1.f), state_outline_col, key_type);
-            dl->AddText(font, font_size, state_pos, IM_COL32(255, 255, 255, state_alpha), key_type);
-
-            height_offset += roundf(15.f * row_alpha);
-        };
-
+        float row_y = y + 24.f;
         for (size_t i = 0; i < sizeof(binds) / sizeof(binds[0]); ++i) {
             const solus_keybind_entry& entry = keybind_state.entries[i];
             if (entry.alpha <= 0.f || !entry.bind) continue;
-            draw_row(entry.bind->name, entry.mode, entry.alpha);
+
+            const int row_text_alpha = (int)(alpha * entry.alpha * 255.f);
+            const ImVec2 key_size = font->CalcTextSizeA(font_size, FLT_MAX, 0.f, entry.key_text);
+            const ImU32 outline_col = IM_COL32(0, 0, 0, (int)(row_text_alpha * 0.65f));
+
+            const ImVec2 name_pos(x + 8.f, row_y);
+            const ImVec2 key_pos(x + width - key_size.x - 8.f, row_y);
+            dl->AddText(font, font_size, ImVec2(name_pos.x + 1.f, name_pos.y + 1.f), outline_col, entry.bind->name);
+            dl->AddText(font, font_size, name_pos, IM_COL32(255, 255, 255, row_text_alpha), entry.bind->name);
+            dl->AddText(font, font_size, ImVec2(key_pos.x + 1.f, key_pos.y + 1.f), outline_col, entry.key_text);
+            dl->AddText(font, font_size, key_pos, solus_menu_color(alpha * entry.alpha), entry.key_text);
+
+            row_y += roundf(15.f * entry.alpha);
         }
     }
 
@@ -874,19 +890,8 @@ namespace hud {
         auto* dl = ImGui::GetBackgroundDrawList();
         if (!dl) return;
 
-        update_keybind_cache();
-
         float adjust_position = 0.f;
-        const ImU32 white = IM_COL32(200, 200, 200, 255);
         const ImU32 alert_color = IM_COL32(0xE7, 0x4F, 0x4F, 255);
-
-        for (size_t i = 0; i < sizeof(binds) / sizeof(binds[0]); ++i) {
-            const solus_keybind_entry& entry = keybind_state.entries[i];
-            if (!entry.active || !entry.bind) continue;
-
-            const ImU32 indicator_color = !strcmp(entry.bind->indicator, "GM") ? alert_color : white;
-            draw_skeet_indicator(dl, font, entry.bind->indicator, indicator_color, adjust_position);
-        }
 
         if (config::get("visual", "admins_around_indicator", 1)) {
             const int admin_count = get_admins_around_count();
@@ -896,27 +901,6 @@ namespace hud {
                 draw_skeet_indicator(dl, font, admins_buf, alert_color, adjust_position);
             }
         }
-    }
-
-    static void draw_gm() {
-        static const bind_state::bind_config k_godmode_bind {
-            "hacks",
-            "godmode",
-            "god_key",
-            "godmode_key",
-            "god_key_mode",
-            "godmode_mode"
-        };
-        if (!bind_state::is_active_or_enabled_when_unbound(k_godmode_bind)) return;
-        auto* dl = ImGui::GetBackgroundDrawList();
-        if (!dl) return;
-        const char* gm = "godmode";
-        ImFont* font = renderer.tahomaBoldFont;
-        ImVec2 ts = font->CalcTextSizeA(HUD_FONT_SZ, FLT_MAX, 0.f, gm);
-        float cx = Game.screen.x / 2.0f;
-        float cy = Game.screen.y / 2.0f + 30.f;
-        dl->AddText(font, HUD_FONT_SZ, ImVec2(cx - ts.x / 2 + 1, cy + 1), IM_COL32(0, 0, 0, 200), gm);
-        dl->AddText(font, HUD_FONT_SZ, ImVec2(cx - ts.x / 2, cy), IM_COL32(255, 30, 30, 255), gm);
     }
 
     static int get_admins_around_count() {
