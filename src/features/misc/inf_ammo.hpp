@@ -1,5 +1,6 @@
 #pragma once
 #include <set>
+#include "features/visuals/thermal.hpp"
 
 namespace hacks {
     static constexpr int k_infinite_ammo_refill = 9999;
