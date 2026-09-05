@@ -1906,7 +1906,7 @@
 				}
 
 			if (data.has_ws_data) {
-				if (config::get("visual", "altv_nickname", 0) && name_pos == 0 && data.altv_nick[0] != '\0') {
+				if (player_info::flag(player_info::field_name) && name_pos == 0 && data.altv_nick[0] != '\0') {
 					const char* nick_text = data.altv_nick;
 					const ImU32 nick_color = get_weapon_highlight_color_u32(data.altv_weapon_hash, get_altv_nickname_color_u32(is_enemy, data.is_friend), data.is_friend);
 					ImVec2 textSize = esp_font->CalcTextSizeA(name_size, FLT_MAX, 0, nick_text);
@@ -1915,7 +1915,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 
-				if (config::get("visual", "altv_static", 0) && data.altv_static_id > 0) {
+				if (player_info::flag(player_info::field_static) && data.altv_static_id > 0) {
 					char id_buf[48];
 					// show only static id (no dynamic/netid)
 					sprintf_s(id_buf, "#%d", data.altv_static_id);
@@ -1926,7 +1926,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 
-				if (config::get("visual", "altv_faction", 0) && data.altv_fraction[0] != '\0' && strcmp(data.altv_fraction, "None") != 0) {
+				if (player_info::flag(player_info::field_fraction) && data.altv_fraction[0] != '\0' && strcmp(data.altv_fraction, "None") != 0) {
 					const ImU32 faction_color = get_altv_fraction_color_u32(data.altv_fraction_id, get_altv_faction_color_u32());
 					char faction_buf[64];
 					const char* faction_text = data.altv_fraction;
@@ -1940,7 +1940,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 
-				if (config::get("visual", "altv_admin", 0) && data.altv_is_admin) {
+				if (player_info::flag(player_info::field_admin) && data.altv_is_admin) {
 					char admin_buf[32];
 					if (data.altv_admin_level > 0) sprintf_s(admin_buf, "ADMIN [%d]", data.altv_admin_level);
 					else sprintf_s(admin_buf, "ADMIN");
@@ -1951,7 +1951,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 
-				if (config::get("visual", "altv_tester", 0) && data.altv_is_tester) {
+				if (player_info::flag(player_info::field_tester) && data.altv_is_tester) {
 					const char* tester_text = "TESTER";
 					const ImU32 tester_color = get_altv_tester_color_u32();
 					ImVec2 textSize = esp_small_font->CalcTextSizeA(label_size, FLT_MAX, 0, tester_text);
@@ -1960,7 +1960,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 
-				if (config::get("visual", "altv_media", 0) && data.altv_is_media) {
+				if (player_info::flag(player_info::field_media) && data.altv_is_media) {
 					const char* media_text = "MEDIA";
 					const ImU32 media_color = get_altv_media_color_u32();
 					ImVec2 textSize = esp_small_font->CalcTextSizeA(label_size, FLT_MAX, 0, media_text);
@@ -1969,7 +1969,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 
-				if (config::get("visual", "altv_afk", 0) && data.altv_is_afk) {
+				if (player_info::flag(player_info::field_afk) && data.altv_is_afk) {
 					const char* afk_text = "AFK";
 					const ImU32 afk_color = get_altv_afk_color_u32();
 					ImVec2 textSize = esp_small_font->CalcTextSizeA(label_size, FLT_MAX, 0, afk_text);
@@ -1978,7 +1978,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 
-				if (config::get("visual", "altv_dead", 0) && data.altv_is_dead) {
+				if (player_info::flag(player_info::field_dead) && data.altv_is_dead) {
 					const char* dead_text = "DEAD";
 					const ImU32 dead_color = get_altv_dead_color_u32();
 					ImVec2 textSize = esp_small_font->CalcTextSizeA(label_size, FLT_MAX, 0, dead_text);
@@ -1987,7 +1987,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 
-				if (config::get("visual", "altv_level", 0) && data.altv_level > 0) {
+				if (player_info::flag(player_info::field_level) && data.altv_level > 0) {
 					char lvl_buf[32];
 					sprintf_s(lvl_buf, "LVL: %d", data.altv_level);
 					const ImU32 level_color = get_altv_level_color_u32();
@@ -1997,7 +1997,7 @@
 					current_top_offset += textSize.y + 2.f;
 				}
 			}
-			else if (config::get("visual", "altv_nickname", 0) && name_pos == 0 && data.name[0] != '\0') {
+			else if (player_info::flag(player_info::field_name) && name_pos == 0 && data.name[0] != '\0') {
 					const char* nick_text = data.name;
 					const DWORD side_weapon_hash = data.has_ws_data && data.altv_weapon_hash != 0 ? data.altv_weapon_hash : weapon_reader::get_weapon_hash(ped);
 						const ImU32 nick_color = get_weapon_highlight_color_u32(side_weapon_hash, get_altv_nickname_color_u32(is_enemy, data.is_friend), data.is_friend);
@@ -2090,7 +2090,7 @@
 					}
 				}
 
-				if (config::get("visual", "altv_nickname", 0) && name_pos != 0) {
+				if (player_info::flag(player_info::field_name) && name_pos != 0) {
 					const char* side_name = nullptr;
 					if (data.has_ws_data) {
 						if (data.altv_nick[0] != '\0') {
@@ -2117,7 +2117,7 @@
 					renderer.RenderDot(ImVec2(aim2d.x - 5, aim2d.y - 5), ImVec2(aim2d.x + 5, aim2d.y + 5), current_color, 1.f);
 				}
 
-				if (config::get("visual", "draw_distance", 0)) {
+				if (player_info::flag(player_info::field_distance)) {
 					char dist_buf[32];
 					sprintf_s(dist_buf, "%dM", (int)(Distance + 0.5f));
 					ImU32 text_col = IM_COL32(

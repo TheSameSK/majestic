@@ -1,17 +1,14 @@
 #pragma once
 #include "core/imports.h"
 #include "kiero.h"
-#include "features/visuals/chams.hpp"
 
 IMGUI_IMPL_API LRESULT  ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 using D3D11PresentHook = HRESULT(__stdcall*)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
 using D3D11ResizeBuffersHook = HRESULT(__stdcall*)(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
-using D3D11DrawIndexedHook = HRESULT(__stdcall*)(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation);
 
 inline D3D11PresentHook phookD3D11Present = nullptr;
 inline D3D11ResizeBuffersHook phookD3D11ResizeBuffers = nullptr;
-inline D3D11DrawIndexedHook phookD3D11DrawIndexed = nullptr;
 
 using namespace std::chrono_literals;
 namespace hook {
@@ -241,38 +238,6 @@ namespace hook {
 		return call_original_wndproc(hWnd, uMsg, wParam, lParam);
 	}
 
-	HRESULT __stdcall hookedD3D11DrawIndexed(ID3D11DeviceContext* pContext, UINT IndexCount, UINT StartIndexLocation, INT BaseVertexLocation) {
-		if (chams::s_enabled && !chams::s_failed) {
-			if (chams::is_ped_draw(pContext) && chams::prepare(pContext)) {
-				chams::draw_chams(pContext, phookD3D11DrawIndexed, IndexCount, StartIndexLocation, BaseVertexLocation);
-				return S_OK;
-			}
-		}
-		return phookD3D11DrawIndexed(pContext, IndexCount, StartIndexLocation, BaseVertexLocation);
-	}
-
-	// kiero only exposes the swapchain vtable, so the immediate-context
-	// DrawIndexed (vtable index 12) goes through MinHook directly
-	void install_drawindexed_hook(IDXGISwapChain* pSwapChain) {
-		static bool installed = false;
-		if (installed) return;
-		installed = true;
-
-		ID3D11Device* dev = nullptr;
-		if (FAILED(pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&dev)) || !dev) return;
-		ID3D11DeviceContext* ctx = nullptr;
-		dev->GetImmediateContext(&ctx);
-		if (ctx) {
-			void** vtable = *reinterpret_cast<void***>(ctx);
-			if (MH_CreateHook(vtable[12], reinterpret_cast<void*>(&hookedD3D11DrawIndexed), reinterpret_cast<void**>(&phookD3D11DrawIndexed)) == MH_OK) {
-				MH_EnableHook(vtable[12]);
-				add_log("drawindexed hook installed");
-			}
-			ctx->Release();
-		}
-		dev->Release();
-	}
-
 	HRESULT __stdcall hookedD3D11ResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags) {
 		if (!renderer.ready()) {
 			return phookD3D11ResizeBuffers(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
@@ -381,16 +346,14 @@ namespace hook {
 						renderer.Initialize(Game.window, pSwapChain);
 						add_log("renderer initialized");
 
-						{
-							ID3D11Device* _hud_dev = nullptr;
-							pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&_hud_dev);
-							if (_hud_dev) {
-								hud::s_device = _hud_dev;
-								_hud_dev->Release();
-							}
+					{
+						ID3D11Device* _hud_dev = nullptr;
+						pSwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&_hud_dev);
+						if (_hud_dev) {
+							hud::s_device = _hud_dev;
+							_hud_dev->Release();
 						}
-
-						install_drawindexed_hook(pSwapChain);
+					}
 
 						g_main_ctx = ImGui::GetCurrentContext();
 						set_render_ready(true);

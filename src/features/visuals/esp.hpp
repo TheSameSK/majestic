@@ -4,6 +4,7 @@
 #include "weapons_highlight.hpp"
 #include "object_hash_registry.hpp"
 #include "config/bind_state.hpp"
+#include "features/visuals/info.hpp"
 #include "network/ws_bridge.hpp"
 #include <set>
 #include <unordered_map>

@@ -1926,6 +1926,8 @@ block_row make_button( const char* label, void (*callback)() ) {
     static const char* const k_outline_mode_items[ 2 ] = { "Static", "Rainbow" };
     static const char* const k_watermark_component_names[ 4 ] = { "VOIDEN", "FPS", "Date", "Time" };
     static const char* const k_watermark_component_ids[ 4 ] = { "name", "fps", "date", "time" };
+    static const char* const k_info_names[ 10 ] = { "Name", "Static", "Fraction", "Admin", "Tester", "Media", "AFK", "Dead", "Level", "Distance" };
+    static const char* const k_info_ids[ 10 ] = { "name", "static", "fraction", "admin", "tester", "media", "afk", "dead", "level", "distance" };
 
     // ------------------------------------------------------------------
     // compact bind menu on the Enable rows: a small gear icon left of the
@@ -2309,6 +2311,14 @@ block_row make_button( const char* label, void (*callback)() ) {
             columns.push_back( std::move( left ) );
             columns.push_back( std::move( right ) );
         } else if ( tab == tab_visuals ) {
+            menu_block thermal;
+            thermal.id = "thermal";
+            thermal.title = "THERMAL";
+            thermal.icon = eye_line;
+            thermal.rows.push_back( make_toggle( "Enabled", "visual", "thermal_enable", false ) );
+            thermal.rows.push_back( dim_when_off( make_color( "World Tint", "visual", "thermal_r", "thermal_g", "thermal_b", "thermal_a" ), "thermal_enable" ) );
+            thermal.rows.push_back( dim_when_off( make_slider( "Glow Intensity", "visual", "thermal_intensity", 1.f, 0.f, 5.f, "%.1f" ), "thermal_enable" ) );
+
             menu_block visuals;
             visuals.id = "visuals";
             visuals.title = "PLAYER";
@@ -2316,28 +2326,16 @@ block_row make_button( const char* label, void (*callback)() ) {
             visuals.rows.push_back( make_toggle( "Enabled", "visual", "enable", false ) );
             visuals.rows.push_back( make_toggle( "Box", "visual", "draw_box", false ) );
             visuals.rows.push_back( make_toggle( "Skeletons", "visual", "draw_skeleton", false ) );
+            visuals.rows.push_back( dim_when_off( make_toggle( "Information", "visual", "info_enable", false ), "enable" ) );
+            visuals.rows.push_back( dim_when_off( make_multi( "Show", "visual", "info_flags",
+                k_info_names, k_info_ids, 10 ), "info_enable" ) );
 
-            menu_block thermal;
-            thermal.id = "thermal";
-            thermal.title = "THERMAL";
-            thermal.icon = eye_line;
-            thermal.rows.push_back( make_toggle( "Enabled", "visual", "thermal_enable", false ) );
-            thermal.rows.push_back( dim_when_off( make_toggle( "Fix Sky Tint", "visual", "thermal_fix_sky", false ), "thermal_enable" ) );
-            thermal.rows.push_back( dim_when_off( make_color( "World Tint", "visual", "thermal_r", "thermal_g", "thermal_b", "thermal_a" ), "thermal_enable" ) );
-            thermal.rows.push_back( dim_when_off( make_slider( "Glow Intensity", "visual", "thermal_intensity", 1.f, 0.f, 5.f, "%.1f" ), "thermal_enable" ) );
-
-            menu_block chams;
-            chams.id = "chams";
-            chams.title = "CHAMS";
-            chams.icon = eye_line;
-            chams.rows.push_back( make_toggle( "Enabled", "visual", "chams_enable", false ) );
-            chams.rows.push_back( dim_when_off( make_color( "Color", "visual", "chams_r", "chams_g", "chams_b", "chams_a" ), "chams_enable" ) );
-
-            menu_column col;
-            col.blocks.push_back( std::move( visuals ) );
-            col.blocks.push_back( std::move( thermal ) );
-            col.blocks.push_back( std::move( chams ) );
-            columns.push_back( std::move( col ) );
+            menu_column left;
+            left.blocks.push_back( std::move( thermal ) );
+            menu_column right;
+            right.blocks.push_back( std::move( visuals ) );
+            columns.push_back( std::move( left ) );
+            columns.push_back( std::move( right ) );
         } else {
             menu_block unload;
             unload.id = "unload";
