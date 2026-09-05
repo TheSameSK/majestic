@@ -2322,6 +2322,7 @@ block_row make_button( const char* label, void (*callback)() ) {
             thermal.title = "THERMAL";
             thermal.icon = eye_line;
             thermal.rows.push_back( make_toggle( "Enabled", "visual", "thermal_enable", false ) );
+            thermal.rows.push_back( dim_when_off( make_toggle( "Fix Sky Tint", "visual", "thermal_fix_sky", true ), "thermal_enable" ) );
             thermal.rows.push_back( dim_when_off( make_color( "World Tint", "visual", "thermal_r", "thermal_g", "thermal_b", "thermal_a" ), "thermal_enable" ) );
             thermal.rows.push_back( dim_when_off( make_slider( "Glow Intensity", "visual", "thermal_intensity", 1.f, 0.f, 5.f, "%.1f" ), "thermal_enable" ) );
 
