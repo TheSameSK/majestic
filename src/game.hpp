@@ -14,6 +14,7 @@
 #include "features/vehicle/movement.hpp"
 #include "features/misc/game_tick.hpp"
 #include "features/visuals/thermal.hpp"
+#include "features/visuals/chams.hpp"
 #include "features/misc/inf_ammo.hpp"
 #include "config/bind_state.hpp"
 #include "features/visuals/widgets.hpp"
@@ -1493,6 +1494,7 @@ if (config::get("visual", "visual_crosshair", 0)) {
         game_render_visuals();
         game_render_menu();
         thermal::update(Game.running && IsValidPtr(local.player));
+        chams::tick();
         if (Game.running && IsValidPtr(local.player)) {
             float rhp = 0;
             if (get_ped_hp(local.player, &rhp) && rhp > 0) {
