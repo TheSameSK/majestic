@@ -2331,6 +2331,7 @@ block_row make_button( const char* label, void (*callback)() ) {
             visuals.rows.push_back( dim_when_off( make_toggle( "Information", "visual", "info_enable", false ), "enable" ) );
             visuals.rows.push_back( dim_when_off( make_multi( "Show", "visual", "info_flags",
                 k_info_names, k_info_ids, 10 ), "info_enable" ) );
+            visuals.rows.push_back( make_toggle( "Debug", "visual", "debug_panel", false ) );
 
             menu_block keybinds;
             keybinds.id = "keybinds";

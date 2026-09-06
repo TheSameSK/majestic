@@ -1,6 +1,7 @@
 #pragma once
 #include "core/imports.h"
 #include "config/bind_state.hpp"
+#include "network/ws_bridge.hpp"
 #include "ui/menu/gui.h"
 #include "assets/heavy_warning_sound.hpp"
 #include "weapons_highlight.hpp"
@@ -437,6 +438,7 @@ namespace hud {
 
     static hud_widget_state watermark_widget;
     static hud_widget_state keybind_widget;
+    static hud_widget_state debug_widget;
     static hud_widget_state weapons_widget;
 
     struct watermark_part {
@@ -860,6 +862,99 @@ namespace hud {
         }
     }
 
+    // live view of the data the altv ESP receives over the websocket - the
+    // same payload the legacy debug logs dumped to esp_incoming.log; rows are
+    // rebuilt every frame so toggling it on shows the current state at once
+    struct debug_panel_state {
+        float width = 0.f;
+        float height = 24.f;
+        bool visible = false;
+        std::vector<std::string> rows;
+    };
+    static debug_panel_state debug_state;
+
+    static void prepare_debug_panel() {
+        debug_state.visible = false;
+        if (!config::get("visual", "debug_panel", 0)) {
+            hud_widget_cancel_drag(debug_widget);
+            return;
+        }
+
+        ImFont* font = get_hud_font();
+        if (!font) return;
+        constexpr float font_size = 12.f;
+
+        std::vector<ws_server::EspPlayer> players;
+        ws_server::copy_players(players);
+
+        debug_state.rows.clear();
+        char line[224];
+        sprintf_s(line, "DEBUG players: %d", (int)players.size());
+        debug_state.rows.push_back(line);
+
+        for (size_t i = 0; i < players.size() && i < 12; ++i) {
+            const ws_server::EspPlayer& p = players[i];
+            const char* name = !p.name.empty() ? p.name.c_str() : (!p.login.empty() ? p.login.c_str() : "?");
+            sprintf_s(line, "%s #%d | %s | hp %d | rel %d%s%s%s%s",
+                name, p.static_id,
+                !p.fraction.empty() ? p.fraction.c_str() : "None",
+                (int)(p.hp + 0.5f),
+                (int)p.auto_relation,
+                p.is_admin ? " | ADMIN" : "",
+                p.is_tester ? " | TESTER" : "",
+                p.is_media ? " | MEDIA" : "",
+                p.is_afk ? " | AFK" : "");
+            debug_state.rows.push_back(line);
+            sprintf_s(line, "   pos (%.1f, %.1f, %.1f) | bones %d | w 0x%08X%s",
+                p.pos_x, p.pos_y, p.pos_z,
+                (int)p.bone_count,
+                p.weapon_hash,
+                p.is_dead ? " | DEAD" : "");
+            debug_state.rows.push_back(line);
+        }
+
+        float width = 60.f;
+        for (const auto& r : debug_state.rows) {
+            width = ImMax(width, font->CalcTextSizeA(font_size, FLT_MAX, 0.f, r.c_str()).x + 16.f);
+        }
+
+        debug_state.width = width;
+        debug_state.height = 24.f + 15.f * (float)debug_state.rows.size();
+        const ImVec2 default_pos(20.f, Game.screen.y / 2.5f);
+        hud_widget_update_drag(debug_widget, "debug_x", "debug_y", default_pos, ImVec2(width, debug_state.height));
+        hud_widget_update_anim(debug_widget);
+        debug_state.visible = true;
+    }
+
+    static void draw_debug_panel() {
+        if (!debug_state.visible) return;
+
+        ImFont* font = get_hud_font();
+        if (!font) return;
+        auto* dl = ImGui::GetBackgroundDrawList();
+        if (!dl) return;
+
+        constexpr float font_size = 12.f;
+        const float alpha = hud_widget_draw_alpha(debug_widget, 1.f);
+        const float x = debug_widget.pos.x;
+        const float y = debug_widget.pos.y;
+        const float width = debug_state.width;
+        const float panel_h = debug_state.height;
+
+        // voiden-style container, same language as the watermark/keybinds
+        dl->AddRectFilled(ImVec2(x, y), ImVec2(x + width, y + panel_h), IM_COL32(9, 9, 10, (int)(240.f * alpha)), 6.f);
+        dl->AddRect(ImVec2(x, y), ImVec2(x + width, y + panel_h), IM_COL32(32, 32, 34, (int)(255.f * alpha)), 6.f);
+
+        float row_y = y + 6.f;
+        for (size_t i = 0; i < debug_state.rows.size(); ++i) {
+            const ImU32 col = i == 0
+                ? solus_menu_color(alpha)
+                : IM_COL32(230, 230, 230, (int)(alpha * 220));
+            dl->AddText(font, font_size, ImVec2(x + 8.f, row_y), col, debug_state.rows[i].c_str());
+            row_y += 15.f;
+        }
+    }
+
     static void draw_skeet_indicator(ImDrawList* dl, ImFont* font, const char* text, ImU32 color, float& adjust_position) {
         constexpr float font_size = 22.f;
         const float x = Game.screen.x / 100.f;
@@ -1156,11 +1251,13 @@ namespace hud {
         hud_reset_drag_feedback();
         prepare_watermark();
         prepare_keybinds();
+        prepare_debug_panel();
         prepare_weapons();
         hud_draw_drag_feedback(dl);
 
         draw_watermark();
         draw_keybinds();
+        draw_debug_panel();
         draw_indicators();
         draw_weapons();
     }
