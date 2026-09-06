@@ -1,6 +1,8 @@
 #pragma once
 
-#include "core/imports.h"
+// config/interface.hpp only - including core/imports.h from here created an
+// include cycle (esp.hpp -> info.hpp -> imports.h -> esp.hpp) that hid the
+// overlay.hpp definitions from player.hpp
 #include "config/interface.hpp"
 #include <map>
 #include <string>
