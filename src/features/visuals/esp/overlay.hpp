@@ -724,17 +724,17 @@ namespace esp {
 			s.element_styles[i] = read_projected_esp_element_style(id);
 			s.element_color_overrides[i] = read_projected_esp_element_color_override(id, &s.element_colors[i]);
 		}
-		s.show_name = config::get("visual", "altv_nickname", 0) != 0;
-		s.show_static = config::get("visual", "altv_static", 0) != 0;
-		s.show_faction = config::get("visual", "altv_faction", 0) != 0;
+		s.show_name = player_info::flag(player_info::field_name);
+		s.show_static = player_info::flag(player_info::field_static);
+		s.show_faction = player_info::flag(player_info::field_fraction);
 		s.show_relation = config::get("visual", "altv_relation", 1) != 0;
-		s.show_admin = config::get("visual", "altv_admin", 0) != 0;
-		s.show_tester = config::get("visual", "altv_tester", 0) != 0;
-		s.show_media = config::get("visual", "altv_media", 0) != 0;
-		s.show_afk = config::get("visual", "altv_afk", 0) != 0;
-		s.show_dead = config::get("visual", "altv_dead", 0) != 0;
-		s.show_level = config::get("visual", "altv_level", 0) != 0;
-		s.show_distance = config::get("visual", "draw_distance", 0) != 0;
+		s.show_admin = player_info::flag(player_info::field_admin);
+		s.show_tester = player_info::flag(player_info::field_tester);
+		s.show_media = player_info::flag(player_info::field_media);
+		s.show_afk = player_info::flag(player_info::field_afk);
+		s.show_dead = player_info::flag(player_info::field_dead);
+		s.show_level = player_info::flag(player_info::field_level);
+		s.show_distance = player_info::flag(player_info::field_distance);
 		const bool legacy_show_weapon = config::get("visual", "draw_weapons", 0) != 0;
 		const bool show_weapon_text = config::get("visual", "draw_weapon_text", 0) != 0;
 		const bool show_weapon_icon = config::get("visual", "draw_weapon_icon", 0) != 0;
