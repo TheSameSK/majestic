@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config/interface.hpp"
+#include "features/visuals/info.hpp"
 #include "render/renderer.h"
 #include "features/visuals/weapons_highlight.hpp"
 #include <Windows.h>
