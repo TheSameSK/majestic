@@ -1166,7 +1166,11 @@
 		static double last_fade_time = 0.0;
 		ws_server::copy_players(players);
 
+		player_info::s_render_debug = {};
+		player_info::s_render_debug.ws_players = (int)players.size();
+
 		const altv_esp_render_settings settings = read_altv_esp_render_settings();
+		player_info::s_render_debug.max_range = settings.max_range;
 		bool has_cached_players = false;
 		if (players.empty()) {
 			for (const auto& state : fade_states) {
@@ -1225,6 +1229,7 @@
 		current_keys.clear();
 		render_items.reserve(players.size() + 16);
 		current_keys.reserve(players.size());
+		player_info::s_render_debug.items = 0;
 		const uint64_t current_sequence = players.empty() ? 0 : players.front().sequence;
 		for (const auto& player : players) {
 			if (current_sequence != 0 && player.sequence != current_sequence) continue;
@@ -1232,6 +1237,7 @@
 			const uint64_t fade_key = make_altv_fade_key(player);
 			current_keys.push_back(fade_key);
 			render_items.push_back(altv_esp_render_item{ player, false });
+			++player_info::s_render_debug.items;
 		}
 		for (auto& state : fade_states) {
 			if (!state.used || !state.has_last_player) continue;
@@ -1317,15 +1323,15 @@
 					draw_opacity *= 1.f - ((1.f - k_altv_dormant_opacity) * enter_blend);
 				}
 			}
-			if (draw_opacity <= 0.005f) continue;
+			if (draw_opacity <= 0.005f) { ++player_info::s_render_debug.skipped_opacity; continue; }
 			if (player.is_dead && settings.dim_dead_players) draw_opacity *= 0.7f;
-			if (player.pos_x == 0.f && player.pos_y == 0.f && player.pos_z == 0.f) continue;
+			if (player.pos_x == 0.f && player.pos_y == 0.f && player.pos_z == 0.f) { ++player_info::s_render_debug.skipped_zero_pos; continue; }
 			Vector3 pos(player.pos_x, player.pos_y, player.pos_z);
 			const float dx = pos.x - local_cache.pos.x;
 			const float dy = pos.y - local_cache.pos.y;
 			const float dz = pos.z - local_cache.pos.z;
 			const float dist_sq = dx * dx + dy * dy + dz * dz;
-			if (dist_sq > max_range_sq) continue;
+			if (dist_sq > max_range_sq) { ++player_info::s_render_debug.skipped_range; continue; }
 
 			const gta_skeleton_cache_entry* gta_match = !item.dormant && !player.is_dead ? find_gta_match(gta_player_cache, player, pos) : nullptr;
 
@@ -1386,6 +1392,7 @@
 			bool top_ok = WorldToScreenMatrix(w2s_view, Vector3(pos.x, pos.y, pos.z + 0.85f), &top2d);
 			bool bottom_ok = WorldToScreenMatrix(w2s_view, Vector3(pos.x, pos.y, pos.z - 1.0f), &bottom2d);
 			if (!top_ok && !bottom_ok) {
+				++player_info::s_render_debug.skipped_w2s;
 				if (::weapons_highlight::esp_line(weapon_highlight, player_weapon_hash, player_is_friend)) {
 					ImVec2 line_target;
 					if (get_offscreen_indicator_target(pos, local_cache.pos, &line_target)) {
@@ -1442,6 +1449,7 @@
 			projected.is_fraction = is_fraction;
 			projected.dormant = item.dormant;
 			draw_projected_player_overlay(esp_dl, settings, projected, top2d, bottom2d, Distance, draw_opacity);
+			++player_info::s_render_debug.drawn;
 
 		}
 

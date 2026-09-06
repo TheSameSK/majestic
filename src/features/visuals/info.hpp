@@ -36,6 +36,19 @@ namespace player_info {
     // once per frame from game_render; the per-ped ESP loop only reads the
     // cached flags and never touches the config map
     inline void tick() {
+        static bool seeded = false;
+        if (!seeded) {
+            seeded = true;
+            // the fields must be off until they are explicitly picked; seed an
+            // all-zero map once so the multi dropdown shows the same state
+            const auto existing = config::get("visual", "info_flags", std::map<std::string, std::string>{});
+            if (existing.empty()) {
+                std::map<std::string, std::string> seeded_map;
+                for (const char* id : k_ids) seeded_map[id] = "0";
+                config::update(seeded_map, "visual", "info_flags", std::map<std::string, std::string>{});
+            }
+        }
+
         if (config::get("visual", "info_enable", 0) == 0) {
             for (bool& b : s_on) b = false;
             return;
@@ -43,11 +56,25 @@ namespace player_info {
         const auto flags = config::get("visual", "info_flags", std::map<std::string, std::string>{});
         for (int i = 0; i < field_count; ++i) {
             const auto it = flags.find(k_ids[i]);
-            s_on[i] = it == flags.end() || it->second == "1";   // menu default: all on
+            s_on[i] = it != flags.end() && it->second == "1";   // default: off
         }
     }
 
     inline bool flag(field f) {
         return s_on[f];
     }
+
+    // live counters from the altv ESP render path, surfaced by the debug
+    // panel so a silent render can be attributed to a specific skip
+    struct render_debug {
+        int ws_players = 0;
+        int items = 0;
+        int drawn = 0;
+        int skipped_opacity = 0;
+        int skipped_zero_pos = 0;
+        int skipped_range = 0;
+        int skipped_w2s = 0;
+        float max_range = 0.f;
+    };
+    inline render_debug s_render_debug = {};
 }

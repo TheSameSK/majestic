@@ -892,13 +892,25 @@ namespace hud {
         sprintf_s(line, "DEBUG players: %d", (int)players.size());
         debug_state.rows.push_back(line);
 
+        // PLAYER -> Enabled gates the whole ESP render; if it is off, the
+        // debug panel still shows data but nothing is drawn on players
+        const bool esp_master = bind_state::is_active_or_enabled_when_unbound(
+            bind_state::bind_config{ "visual", "enable", "esp_key", nullptr, "esp_key_mode", nullptr });
+        const player_info::render_debug& rd = player_info::s_render_debug;
+        sprintf_s(line, "render: esp %s | range %.0f | proj %d | skip zero %d range %d w2s %d fade %d",
+            esp_master ? "ON" : "OFF",
+            rd.max_range, rd.drawn, rd.skipped_zero_pos, rd.skipped_range, rd.skipped_w2s, rd.skipped_opacity);
+        debug_state.rows.push_back(line);
+
         for (size_t i = 0; i < players.size() && i < 12; ++i) {
             const ws_server::EspPlayer& p = players[i];
             const char* name = !p.name.empty() ? p.name.c_str() : (!p.login.empty() ? p.login.c_str() : "?");
+            // altv sends hp with +100 offset (150 = 50 real), same as the ESP bars
+            const int hp_display = p.hp > 100.f ? (int)(p.hp - 100.f + 0.5f) : (int)(p.hp + 0.5f);
             sprintf_s(line, "%s #%d | %s | hp %d | rel %d%s%s%s%s",
                 name, p.static_id,
                 !p.fraction.empty() ? p.fraction.c_str() : "None",
-                (int)(p.hp + 0.5f),
+                hp_display,
                 (int)p.auto_relation,
                 p.is_admin ? " | ADMIN" : "",
                 p.is_tester ? " | TESTER" : "",
