@@ -133,8 +133,9 @@ namespace voiden_menu {
 
     constexpr int tab_aimbot = 0;
     constexpr int tab_visuals = 1;
-    constexpr int tab_settings = 2;
-    constexpr int tab_cosmetic = 3;
+    constexpr int tab_animals = 2;
+    constexpr int tab_settings = 3;
+    constexpr int tab_cosmetic = 4;
 
     // scrolling state: content offset per tab and sidebar section offset;
     // g_any_dropdown_open suppresses the content wheel while a dropdown shows
@@ -2364,6 +2365,19 @@ namespace voiden_menu {
             columns.push_back(std::move(left));
             columns.push_back(std::move(right));
         }
+        else if (tab == tab_animals) {
+            // standalone animal overlay - independent from the player ESP
+            menu_block animals;
+            animals.id = "animals";
+            animals.title = "ANIMALS ESP";
+            animals.icon = eye_line;
+            animals.rows.push_back(make_toggle("Enabled", "visual", "esp_animals", false));
+            animals.rows.push_back(dim_when_off(make_toggle("Lines", "visual", "esp_animals_lines", false), "esp_animals"));
+
+            menu_column col;
+            col.blocks.push_back(std::move(animals));
+            columns.push_back(std::move(col));
+        }
         else {
             menu_block unload;
             unload.id = "unload";
@@ -2758,10 +2772,14 @@ namespace voiden_menu {
             g_active_tab = tab_visuals;
         }
         ImGui::SetCursorScreenPos(ImVec2(wpos.x + pad, nav_y + SCALE(100) + nav_offset));
+        if (nav_item("voiden_nav_animals", eye_line, "ANIMALS", g_active_tab == tab_animals, nav_width)) {
+            g_active_tab = tab_animals;
+        }
+        ImGui::SetCursorScreenPos(ImVec2(wpos.x + pad, nav_y + SCALE(150) + nav_offset));
         if (nav_item("voiden_nav_settings", settings_3_line, "SETTINGS", g_active_tab == tab_settings, nav_width)) {
             g_active_tab = tab_settings;
         }
-        ImGui::SetCursorScreenPos(ImVec2(wpos.x + pad, nav_y + SCALE(150) + nav_offset));
+        ImGui::SetCursorScreenPos(ImVec2(wpos.x + pad, nav_y + SCALE(200) + nav_offset));
         if (nav_item("voiden_nav_cosmetic", brush_line, "COSMETIC", g_active_tab == tab_cosmetic, nav_width)) {
             g_active_tab = tab_cosmetic;
         }
@@ -2774,9 +2792,9 @@ namespace voiden_menu {
         const float content_x = wpos.x + sidebar_w + SCALE(30);
         const float content_w = wsize.x - sidebar_w - SCALE(60);
 
-        const char* title = (g_active_tab == tab_aimbot) ? "AIMBOT" : (g_active_tab == tab_visuals ? "VISUALS" : (g_active_tab == tab_cosmetic ? "COSMETIC" : "SETTINGS"));
-        const char* subtitle = (g_active_tab == tab_aimbot) ? "aim assistance module" : (g_active_tab == tab_visuals ? "player overlay module" : (g_active_tab == tab_cosmetic ? "menu customization" : "configuration and unload"));
-        const char* icon = (g_active_tab == tab_aimbot) ? aiming_line : (g_active_tab == tab_visuals ? eye_line : (g_active_tab == tab_cosmetic ? brush_line : settings_3_line));
+        const char* title = (g_active_tab == tab_aimbot) ? "AIMBOT" : (g_active_tab == tab_visuals ? "VISUALS" : (g_active_tab == tab_animals ? "ANIMALS" : (g_active_tab == tab_cosmetic ? "COSMETIC" : "SETTINGS")));
+        const char* subtitle = (g_active_tab == tab_aimbot) ? "aim assistance module" : (g_active_tab == tab_visuals ? "player overlay module" : (g_active_tab == tab_animals ? "animal overlay module" : (g_active_tab == tab_cosmetic ? "menu customization" : "configuration and unload")));
+        const char* icon = (g_active_tab == tab_aimbot) ? aiming_line : (g_active_tab == tab_visuals ? eye_line : (g_active_tab == tab_animals ? eye_line : (g_active_tab == tab_cosmetic ? brush_line : settings_3_line)));
 
         if (ImFont* icon_font = get_font(icons, 16)) {
             const ImVec2 ts = icon_font->CalcTextSizeA(icon_font->FontSize, FLT_MAX, 0.f, icon);
@@ -2805,10 +2823,10 @@ namespace voiden_menu {
         // frame the wheel is handled, and the clamp uses the content height
         // measured on the previous frame, so the list can always be scrolled
         // exactly to its bottom edge
-        static float g_content_scroll[4] = {};
-        static float g_content_max[4] = {};
-        float& content_scroll = g_content_scroll[ImClamp(g_active_tab, 0, 3)];
-        float& content_max = g_content_max[ImClamp(g_active_tab, 0, 3)];
+        static float g_content_scroll[5] = {};
+        static float g_content_max[5] = {};
+        float& content_scroll = g_content_scroll[ImClamp(g_active_tab, 0, 4)];
+        float& content_max = g_content_max[ImClamp(g_active_tab, 0, 4)];
 
         if (ImGui::IsMouseHoveringRect(ImVec2(content_x, area_top), ImVec2(content_x + content_w, area_bottom)) && !g_any_dropdown_open) {
             const float wheel = ImGui::GetIO().MouseWheel;

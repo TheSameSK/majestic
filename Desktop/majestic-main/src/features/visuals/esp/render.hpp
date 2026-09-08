@@ -27,6 +27,12 @@ void render_impl() {
 		run_section("player", draw_player_esp);
 	}
 
+	// standalone animal overlay - runs regardless of the player ESP bind
+	render_stage = "animals";
+	if (config::get("visual", "esp_animals", 0)) {
+		run_section("animals", draw_animal_esp);
+	}
+
 	render_stage = "radar config";
 	if (config::get("visual", "radar", 0) && ws_server::has_resolved_server_id()) {
 		render_stage = "radar";
