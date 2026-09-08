@@ -2366,9 +2366,16 @@ namespace voiden_menu {
             tracers.rows.push_back(dim_when_off(make_slider("Life", "visual", "tracers_life", 1.f, 0.2f, 3.f, "%.1f s"), "tracers"));
             tracers.rows.push_back(dim_when_off(make_slider("Thickness", "visual", "tracers_thickness", 1.5f, 0.5f, 4.f, "%.1f"), "tracers"));
 
+            menu_block alt_esp;
+            alt_esp.id = "alt_esp";
+            alt_esp.title = "ALT ESP";
+            alt_esp.icon = eye_line;
+            alt_esp.rows.push_back(make_toggle("Enabled", "visual", "alt_esp", false));
+
             menu_column left;
             left.blocks.push_back(std::move(thermal));
             left.blocks.push_back(std::move(keybinds));
+            left.blocks.push_back(std::move(alt_esp));
             menu_column right;
             right.blocks.push_back(std::move(visuals));
             right.blocks.push_back(std::move(tracers));
