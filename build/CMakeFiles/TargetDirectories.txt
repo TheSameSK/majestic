@@ -1,5 +1,0 @@
-C:/Users/helpe/Desktop/NOCTUAV8 - new design — копия/build/CMakeFiles/noctua.dir
-C:/Users/helpe/Desktop/NOCTUAV8 - new design — копия/build/CMakeFiles/noctua_embedded_payload.dir
-C:/Users/helpe/Desktop/NOCTUAV8 - new design — копия/build/CMakeFiles/noctua_embedded_freecam.dir
-C:/Users/helpe/Desktop/NOCTUAV8 - new design — копия/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/helpe/Desktop/NOCTUAV8 - new design — копия/build/CMakeFiles/ZERO_CHECK.dir
