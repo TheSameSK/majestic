@@ -1465,11 +1465,20 @@ bool draw_altv_player_esp() {
 		}
 	}
 
+	return true;
+}
+
+// standalone animal overlay - runs independently from the player ESP
+// (esp/render.hpp calls it from its own section, gated only by esp_animals)
+void draw_animal_esp() {
+	PedCache local_cache{};
+	if (!IsValidPtr(local.player) || !read_ped_cache(local.player, &local_cache) || local_cache.hp <= 0.f)
+		return;
+
 	// display nearby animals count and list on-screen when enabled
 	if (config::get("visual", "esp_animals", 0)) {
 		int animal_count = 0;
-		std::vector<std::string> animal_list;
-		{
+		std::vector<std::string> animal_list;		{
 			std::lock_guard<std::mutex> lock(game::ped_list_mutex);
 			for (const auto& entry : game::ped_list) {
 				CObject* ped = entry.first;
