@@ -17,6 +17,38 @@ namespace alt_esp {
         s_enabled = config::get("visual", "alt_esp", 0) != 0;
     }
 
+    // sName on RU RP servers is often stored in Windows-1251; ImGui expects
+    // UTF-8 and renders every invalid byte as '?'. Bytes that already form
+    // valid UTF-8 are passed through unchanged.
+    static std::string name_to_utf8(const char* s, size_t n) {
+        std::string out;
+        out.reserve(n * 2 + 1);
+        size_t i = 0;
+        while (i < n && s[i]) {
+            const unsigned char c = (unsigned char)s[i];
+            if (c < 0x80) { out.push_back((char)c); ++i; continue; }
+            // possible UTF-8 lead byte - keep if continuation bytes are valid
+            if (c >= 0xC2 && c <= 0xF4) {
+                const size_t len = (c >= 0xF0) ? 4 : (c >= 0xE0) ? 3 : 2;
+                bool ok = i + len <= n;
+                for (size_t k = 1; ok && k < len; ++k) ok = ((unsigned char)s[i + k] & 0xC0) == 0x80;
+                if (ok) { out.append(s + i, len); i += len; continue; }
+            }
+            // CP1251 Cyrillic (C0-FF -> U+0410-U+044F) and punctuation
+            if (c >= 0xC0 && c <= 0xFF) {
+                const unsigned u = 0x410 + (c - 0xC0);
+                out.push_back((char)(0xD0 + ((u >> 6) - 0x10)));
+                out.push_back((char)(0x80 + (u & 0x3F)));
+            }
+            else if (c == 0xA8) { out.push_back((char)0xD0); out.push_back((char)0x81); }  // Ё
+            else if (c == 0xB8) { out.push_back((char)0xD1); out.push_back((char)0x91); }  // ё
+            else if (c >= 0x80) { out.push_back((char)0xC2); out.push_back((char)(c - 0x40)); }
+            else { out.push_back('?'); }
+            ++i;
+        }
+        return out;
+    }
+
     // per-ped drawing - NO __try here (ImVec2/RGBA have user ctors, which the
     // SEH-compiled function must not own); read faults from this function are
     // caught by the caller's __except
@@ -40,14 +72,29 @@ namespace alt_esp {
 
         renderer.RenderRect(p0, p1, col, 0.f, ImDrawFlags_RoundCornersAll, 1.5f);
 
-        char label[80];
+        std::string label;
         if (is_player && pinfo->sName[0]) {
-            sprintf_s(label, "ALT %s", pinfo->sName);
+            label = "ALT " + name_to_utf8(pinfo->sName, sizeof(pinfo->sName));
         }
         else {
-            sprintf_s(label, "ALT ped#%d", index);
+            char ped_label[32];
+            sprintf_s(ped_label, "ALT ped#%d", index);
+            label = ped_label;
         }
-        renderer.RenderText(label, ImVec2(top2d.x, top2d.y - 14.f), 12.f, col, true, true);
+
+        // same font as the main ESP name (loaded with cyrillic ranges) -
+        // RenderText's espFont fallback chain may end on a latin-only font
+        ImFont* name_font = renderer.EspNameFont(12.f, nullptr);
+        if (name_font) {
+            const ImVec2 ts = name_font->CalcTextSizeA(12.f, FLT_MAX, 0.f, label.c_str());
+            const ImVec2 text_pos(top2d.x - ts.x * 0.5f, top2d.y - ts.y - 3.f);
+            const ImU32 text_col = IM_COL32(col.r, col.g, col.b, col.a);
+            dl->AddText(name_font, 12.f, ImVec2(text_pos.x + 1.f, text_pos.y + 1.f), IM_COL32(0, 0, 0, (int)(col.a * 0.7f)), label.c_str());
+            dl->AddText(name_font, 12.f, text_pos, text_col, label.c_str());
+        }
+        else {
+            renderer.RenderText(label.c_str(), ImVec2(top2d.x, top2d.y - 14.f), 12.f, col, true, true);
+        }
 
         float hp_ratio = ped->MaxHP > 0.f ? ped->HP / ped->MaxHP : 0.f;
         hp_ratio = hp_ratio > 1.f ? 1.f : (hp_ratio < 0.f ? 0.f : hp_ratio);
