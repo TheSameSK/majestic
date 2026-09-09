@@ -1,5 +1,7 @@
 #pragma once
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
