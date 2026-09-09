@@ -3,14 +3,31 @@
 #include "core/imports.h"
 #include "config/interface.hpp"
 #include "render/renderer.h"
+#include <string>
+#include <vector>
 
 extern imgui_render renderer;
+
+// pointer_to_entity_handle is defined later in game.hpp (namespace game);
+// forward-declared here so the draw path can convert a CObject* to the
+// entity handle the player natives expect.
+namespace game {
+    int pointer_to_entity_handle(uintptr_t ptr);
+}
 
 // Alternative ESP - reads peds straight from the game's ped pool (memory),
 // completely independent from the JS/websocket bridge. Proof-of-concept that
 // direct C++ memory reading works: box + name + health bar for every ped,
-// plus a status line with the total counts.
+// plus a status line with the total counts. Player names come from the
+// GET_PLAYER_NAME native (matched by ped handle) - the CPlayerInfo::sName
+// field is uninitialized garbage on alt:V.
 namespace alt_esp {
+    struct player_entry {
+        int handle = 0;
+        std::string name;
+    };
+
+    inline std::vector<player_entry> s_players;
     inline bool s_enabled = false;
 
     inline void tick() {
@@ -49,6 +66,18 @@ namespace alt_esp {
         return out;
     }
 
+    // once per frame: map active players (by ped handle) to their names
+    static void collect_players() {
+        s_players.clear();
+        for (int i = 0; i < 32; ++i) {
+            if (!native::player::network_is_player_active(i)) continue;
+            const int ped_handle = native::player::get_player_ped(i);
+            if (ped_handle <= 0) continue;
+            const char* nm = native::player::get_player_name(i);
+            s_players.push_back({ ped_handle, nm ? nm : "" });
+        }
+    }
+
     // per-ped drawing - NO __try here (ImVec2/RGBA have user ctors, which the
     // SEH-compiled function must not own); read faults from this function are
     // caught by the caller's __except
@@ -72,9 +101,18 @@ namespace alt_esp {
 
         renderer.RenderRect(p0, p1, col, 0.f, ImDrawFlags_RoundCornersAll, 1.5f);
 
-        std::string label;
-        if (is_player && pinfo->sName[0]) {
-            label = "ALT " + name_to_utf8(pinfo->sName, sizeof(pinfo->sName));
+        // name from the GET_PLAYER_NAME native, matched by ped handle
+        std::string label = "ALT player";
+        if (is_player) {
+            const int handle = game::pointer_to_entity_handle(reinterpret_cast<uintptr_t>(ped));
+            if (handle > 0) {
+                for (const auto& p : s_players) {
+                    if (p.handle == handle) {
+                        label = "ALT " + name_to_utf8(p.name.c_str(), p.name.size());
+                        break;
+                    }
+                }
+            }
         }
         else {
             char ped_label[32];
@@ -113,6 +151,8 @@ namespace alt_esp {
 
         const int max_peds = Game.ReplayInterface->ped_interface->max_peds;
         if (max_peds <= 0 || max_peds > 1024) return;
+
+        collect_players();
 
         for (int i = 0; i < max_peds; ++i) {
             CObject* ped = Game.ReplayInterface->ped_interface->get_ped(i);
