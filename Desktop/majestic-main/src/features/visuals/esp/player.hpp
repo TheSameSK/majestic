@@ -1593,8 +1593,6 @@ void draw_animal_esp() {
 			}
 		}
 	}
-
-	return true;
 }
 
 void draw_player_esp() {

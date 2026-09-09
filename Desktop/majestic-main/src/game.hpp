@@ -1496,13 +1496,62 @@ namespace game {
         catch (...) { NOCTUA_RUNTIME_LOG("menu_render cxx exception"); }
     }
 
+    // scans the ped pool for shooting peds and feeds tracers::add_line with
+    // muzzle->impact lines (pure natives, no JS). Lives here because it needs
+    // pointer_to_entity_handle (defined above).
+    static void update_tracers() {
+        tracers::refresh_config();
+        if (!tracers::s_enabled) {
+            tracers::clear();
+            return;
+        }
+        tracers::expire();
+
+        const float max_range = config::get("hack", "max_range", 300.f);
+        const float max_range_sq = max_range * max_range;
+
+        std::lock_guard<std::mutex> lock(ped_list_mutex);
+        for (const auto& entry : ped_list) {
+            CObject* ped = entry.first;
+            if (!IsValidPtr(ped) || ped->HP <= 0.f) continue;
+
+            if (IsValidPtr(local.player)) {
+                const Vector3& ppos = ped->fPosition;
+                const Vector3& lpos = local.player->fPosition;
+                const float dx = ppos.x - lpos.x, dy = ppos.y - lpos.y, dz = ppos.z - lpos.z;
+                if (dx * dx + dy * dy + dz * dz > max_range_sq) continue;
+            }
+
+            const int handle = pointer_to_entity_handle(reinterpret_cast<uintptr_t>(ped));
+            if (handle <= 0) continue;
+            if (!native::ped::is_ped_shooting(handle)) continue;
+
+            const PVector3 muzzle = native::ped::get_ped_bone_coords(handle, 57005, 0.f, 0.f, 0.f);
+            PVector3 impact{};
+            if (!native::weapon::get_ped_last_weapon_impact_coord(handle, &impact)) continue;
+            if (impact.x == 0.f && impact.y == 0.f && impact.z == 0.f) continue;
+
+            // dedup: only add a line when the impact point moved
+            static std::map<int, PVector3> s_last_impact;
+            const auto it = s_last_impact.find(handle);
+            if (it != s_last_impact.end()) {
+                const float ddx = impact.x - it->second.x;
+                const float ddy = impact.y - it->second.y;
+                const float ddz = impact.z - it->second.z;
+                if (ddx * ddx + ddy * ddy + ddz * ddz <= 0.09f) continue;
+            }
+            s_last_impact[handle] = impact;
+            tracers::add_line(muzzle.x, muzzle.y, muzzle.z, impact.x, impact.y, impact.z);
+        }
+    }
+
     void game_render() {
         player_info::tick();
         game_render_visuals();
         game_render_menu();
         thermal::update(Game.running && IsValidPtr(local.player));
         chams::tick();
-        tracers::update();
+        update_tracers();
         tracers::draw();
         alt_esp::tick();
         alt_esp::draw();
