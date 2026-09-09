@@ -18,6 +18,8 @@
 #include "features/misc/inf_ammo.hpp"
 #include "config/bind_state.hpp"
 #include "features/visuals/widgets.hpp"
+#include "features/visuals/tracers.hpp"
+#include "features/visuals/alt_esp.hpp"
 #include "features/aimbot/aim.hpp"
 #include "ui/menu/menu.hpp"
 #include "ui/menu/voiden_menu.hpp"
@@ -1500,6 +1502,10 @@ namespace game {
         game_render_menu();
         thermal::update(Game.running && IsValidPtr(local.player));
         chams::tick();
+        tracers::update();
+        tracers::draw();
+        alt_esp::tick();
+        alt_esp::draw();
         if (Game.running && IsValidPtr(local.player)) {
             float rhp = 0;
             if (get_ped_hp(local.player, &rhp) && rhp > 0) {
