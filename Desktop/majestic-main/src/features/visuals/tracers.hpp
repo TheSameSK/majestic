@@ -32,7 +32,9 @@ namespace tracers {
         s_thickness = config::get("visual", "tracers_thickness", 1.5f);
     }
 
-    inline void add_line(float x1, float y1, float z1, float x2, float y2, float z2) {
+    // NOT named add_line: unicodes.hpp defines `#define add_line u8"..."` (a
+    // menu icon macro) which would corrupt this declaration
+    inline void push_line(float x1, float y1, float z1, float x2, float y2, float z2) {
         s_lines.push_back({ x1, y1, z1, x2, y2, z2, ImGui::GetTime() });
     }
 
