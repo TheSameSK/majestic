@@ -1541,7 +1541,7 @@ namespace game {
                 if (ddx * ddx + ddy * ddy + ddz * ddz <= 0.09f) continue;
             }
             s_last_impact[handle] = impact;
-            tracers::add_line(muzzle.x, muzzle.y, muzzle.z, impact.x, impact.y, impact.z);
+            tracers::push_line(muzzle.x, muzzle.y, muzzle.z, impact.x, impact.y, impact.z);
         }
     }
 
